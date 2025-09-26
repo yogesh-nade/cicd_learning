@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import NoteForm from './components/NoteForm';
-import NotesList from './components/NotesList';
 import { notesAPI } from './services/api';
 
 function App() {
   const [notes, setNotes] = useState([]);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
-  const [editingNote, setEditingNote] = useState(null);
-  const [error, setError] = useState('');
 
-  // Fetch all notes on component mount
+  // Fetch notes on load
   useEffect(() => {
     fetchNotes();
   }, []);
@@ -20,104 +18,117 @@ function App() {
       setLoading(true);
       const response = await notesAPI.getAllNotes();
       setNotes(response.data);
-      setError('');
     } catch (error) {
       console.error('Error fetching notes:', error);
-      setError('Failed to fetch notes. Make sure the server is running.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddNote = async (noteData) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !content.trim()) return;
+
     try {
-      const response = await notesAPI.createNote(noteData);
-      setNotes(prev => [response.data, ...prev]);
-      setError('');
+      setLoading(true);
+      await notesAPI.createNote({ title, content });
+      setTitle('');
+      setContent('');
+      fetchNotes(); // Refresh notes
     } catch (error) {
       console.error('Error creating note:', error);
-      setError('Failed to create note.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEditNote = (note) => {
-    setEditingNote(note);
-  };
-
-  const handleUpdateNote = async (noteData) => {
+  const deleteNote = async (id) => {
     try {
-      const response = await notesAPI.updateNote(editingNote._id, noteData);
-      setNotes(prev => 
-        prev.map(note => 
-          note._id === editingNote._id ? response.data : note
-        )
-      );
-      setEditingNote(null);
-      setError('');
+      await notesAPI.deleteNote(id);
+      fetchNotes(); // Refresh notes
     } catch (error) {
-      console.error('Error updating note:', error);
-      setError('Failed to update note.');
+      console.error('Error deleting note:', error);
     }
-  };
-
-  const handleDeleteNote = async (noteId) => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      try {
-        await notesAPI.deleteNote(noteId);
-        setNotes(prev => prev.filter(note => note._id !== noteId));
-        setError('');
-      } catch (error) {
-        console.error('Error deleting note:', error);
-        setError('Failed to delete note.');
-      }
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingNote(null);
   };
 
   return (
     <div className="App">
-      <header className="app-header">
-        <h1>📝 My Notes App</h1>
+      <header className="App-header">
+        <h1>📝 Notes App - CI/CD Demo</h1>
+        <p>Simple MERN stack with automated deployment</p>
       </header>
-      
-      <main className="main-content">
-        {error && <div className="error-message">{error}</div>}
-        
-        <div className="form-section">
-          {editingNote ? (
-            <div>
-              <div className="edit-header">
-                <h2>Edit Note</h2>
-                <button onClick={handleCancelEdit} className="cancel-btn">
-                  Cancel
-                </button>
-              </div>
-              <NoteForm
-                onSubmit={handleUpdateNote}
-                initialData={editingNote}
-                isEditing={true}
+
+      <main style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+        {/* Add Note Form */}
+        <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '8px' }}>
+          <h2>✏️ Add New Note</h2>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: '15px' }}>
+              <input
+                type="text"
+                placeholder="Note title..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                style={{ width: '100%', padding: '10px', fontSize: '16px', border: '1px solid #ccc', borderRadius: '4px' }}
               />
             </div>
-          ) : (
-            <div>
-              <h2>Add New Note</h2>
-              <NoteForm onSubmit={handleAddNote} />
+            <div style={{ marginBottom: '15px' }}>
+              <textarea
+                placeholder="Note content..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={4}
+                style={{ width: '100%', padding: '10px', fontSize: '16px', border: '1px solid #ccc', borderRadius: '4px' }}
+              />
             </div>
-          )}
+            <button 
+              type="submit" 
+              disabled={loading}
+              style={{ padding: '10px 20px', fontSize: '16px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              {loading ? '⏳ Adding...' : '➕ Add Note'}
+            </button>
+          </form>
         </div>
 
-        <div className="notes-section">
-          <h2>Your Notes ({notes.length})</h2>
-          <NotesList
-            notes={notes}
-            onEdit={handleEditNote}
-            onDelete={handleDeleteNote}
-            loading={loading}
-          />
+        {/* Notes List */}
+        <div>
+          <h2>📋 Your Notes ({notes.length})</h2>
+          {loading && <p>⏳ Loading...</p>}
+          {notes.length === 0 && !loading && (
+            <p style={{ textAlign: 'center', color: '#666', fontSize: '18px' }}>
+              No notes yet. Add your first note above! 👆
+            </p>
+          )}
+          
+          <div style={{ display: 'grid', gap: '15px' }}>
+            {notes.map((note) => (
+              <div key={note._id} style={{ padding: '15px', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>{note.title}</h3>
+                    <p style={{ margin: '0 0 10px 0', color: '#666', lineHeight: '1.5' }}>{note.content}</p>
+                    <small style={{ color: '#999' }}>
+                      Created: {new Date(note.createdAt).toLocaleDateString()}
+                    </small>
+                  </div>
+                  <button
+                    onClick={() => deleteNote(note._id)}
+                    style={{ padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '10px' }}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* Footer */}
+        <footer style={{ marginTop: '40px', textAlign: 'center', color: '#666', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+          <p>🚀 Deployed automatically via GitHub Actions</p>
+          <p>Backend: Render.com | Frontend: Netlify | CI/CD: GitHub Actions</p>
+        </footer>
       </main>
     </div>
   );
