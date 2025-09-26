@@ -34,9 +34,10 @@ const notesRoutes = require('./routes/notes');
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Notes API is running!',
-    version: '1.0.0',
+    version: '1.0.1',
     environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    deployment: 'auto-deployment-test'
   });
 });
 
