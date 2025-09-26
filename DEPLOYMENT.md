@@ -2,7 +2,22 @@
 
 This guide will help you deploy the Notes App backend to Render.
 
-## Prerequisites
+## 🚀 Quick Start - Automated Deployment (Recommended)
+
+For automatic deployment via GitHub Actions, see: **[GITHUB_ACTIONS_DEPLOYMENT.md](./GITHUB_ACTIONS_DEPLOYMENT.md)**
+
+This approach provides:
+- ✅ Automatic deployment on every push to main
+- 🔍 Pre-deployment verification
+- 🧪 Health checks and API testing
+- 📊 Deployment summaries
+- 🛡️ Better error handling
+
+## Manual Deployment Steps
+
+If you prefer manual deployment:
+
+### Prerequisites
 
 1. **GitHub Repository**: Your code should be pushed to GitHub (✅ Already done)
 2. **MongoDB Atlas Account**: You'll need a cloud MongoDB database

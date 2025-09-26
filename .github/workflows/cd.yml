@@ -1,0 +1,173 @@
+name: Production Deployment
+
+# Trigger deployment on successful CI completion or direct push to main
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [ completed ]
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  # Check if we should deploy
+  should-deploy:
+    name: Check Deployment Conditions
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+    - name: Check if deployment should proceed
+      id: check
+      run: |
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          echo "deploy=true" >> $GITHUB_OUTPUT
+          echo "✅ Direct push to main - deploying"
+        elif [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
+          echo "deploy=true" >> $GITHUB_OUTPUT
+          echo "✅ CI pipeline successful - deploying"
+        else
+          echo "deploy=false" >> $GITHUB_OUTPUT
+          echo "❌ CI pipeline failed or conditions not met - skipping deployment"
+        fi
+
+  # Deploy Backend to Render
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: should-deploy
+    if: needs.should-deploy.outputs.deploy == 'true'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    # Pre-deployment verification
+    - name: Verify backend build
+      run: |
+        cd backend
+        npm ci
+        echo "✅ Backend dependencies installed successfully"
+        
+    # Trigger Render deployment
+    - name: Deploy to Render
+      env:
+        RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      run: |
+        if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+          echo "❌ RENDER_DEPLOY_HOOK_URL secret not configured"
+          echo "Please set up the Render deploy hook URL in GitHub secrets"
+          exit 1
+        fi
+        
+        echo "🚀 Triggering Render deployment..."
+        response=$(curl -s -w "%{http_code}" -X POST "$RENDER_DEPLOY_HOOK_URL")
+        http_code="${response: -3}"
+        
+        if [[ "$http_code" -eq 200 || "$http_code" -eq 201 ]]; then
+          echo "✅ Deployment hook triggered successfully"
+        else
+          echo "❌ Deployment hook failed with HTTP code: $http_code"
+          exit 1
+        fi
+
+    # Wait and verify deployment
+    - name: Verify deployment
+      env:
+        RENDER_SERVICE_URL: ${{ secrets.RENDER_SERVICE_URL }}
+      run: |
+        if [ -z "$RENDER_SERVICE_URL" ]; then
+          echo "⚠️  RENDER_SERVICE_URL not configured, skipping verification"
+          exit 0
+        fi
+        
+        echo "⏳ Waiting for deployment to complete..."
+        sleep 45  # Give Render time to start deployment
+        
+        # Check deployment status
+        for i in {1..20}; do
+          echo "🔍 Checking service health... (attempt $i/20)"
+          
+          if response=$(curl -s -f "$RENDER_SERVICE_URL/health" 2>/dev/null); then
+            echo "✅ Service is responding!"
+            echo "📊 Health check response:"
+            echo "$response" | jq '.' 2>/dev/null || echo "$response"
+            break
+          elif [ $i -eq 20 ]; then
+            echo "❌ Service failed to respond after 20 attempts"
+            echo "🔍 Trying root endpoint..."
+            curl -s "$RENDER_SERVICE_URL/" || echo "Root endpoint also not responding"
+            exit 1
+          else
+            echo "⏳ Service not ready yet, waiting..."
+            sleep 15
+          fi
+        done
+
+    # Post-deployment tests
+    - name: Test API endpoints
+      env:
+        RENDER_SERVICE_URL: ${{ secrets.RENDER_SERVICE_URL }}
+      run: |
+        if [ -n "$RENDER_SERVICE_URL" ]; then
+          echo "🧪 Testing API endpoints..."
+          
+          # Test root endpoint
+          echo "Testing GET /"
+          curl -f -s "$RENDER_SERVICE_URL/" > /dev/null && echo "✅ Root endpoint OK" || echo "❌ Root endpoint failed"
+          
+          # Test notes endpoint
+          echo "Testing GET /api/notes"
+          curl -f -s "$RENDER_SERVICE_URL/api/notes" > /dev/null && echo "✅ Notes endpoint OK" || echo "❌ Notes endpoint failed"
+          
+          # Test health endpoint
+          echo "Testing GET /health"
+          curl -f -s "$RENDER_SERVICE_URL/health" > /dev/null && echo "✅ Health endpoint OK" || echo "❌ Health endpoint failed"
+        fi
+
+  # Deployment summary
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [should-deploy, deploy-backend]
+    if: always() && needs.should-deploy.outputs.deploy == 'true'
+    
+    steps:
+    - name: Generate deployment summary
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.deploy-backend.result }}" == "success" ]]; then
+          echo "✅ **Backend Deployment:** Success" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ secrets.RENDER_SERVICE_URL }}" ]; then
+            echo "🌐 **Service URL:** ${{ secrets.RENDER_SERVICE_URL }}" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "❌ **Backend Deployment:** Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "- Check Render dashboard for detailed deployment logs" >> $GITHUB_STEP_SUMMARY
+        echo "- Verify API endpoints are working correctly" >> $GITHUB_STEP_SUMMARY
+        echo "- Monitor application performance and logs" >> $GITHUB_STEP_SUMMARY
