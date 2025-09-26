@@ -37,6 +37,8 @@ jobs:
         echo "✅ Ready to build and deploy"
 
     - name: Build frontend
+      env:
+        REACT_APP_API_BASE_URL: ${{ vars.REACT_APP_API_BASE_URL }}
       run: |
         cd frontend
         npm run build
