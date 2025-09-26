@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 // Backend API URL - uses environment variable or fallback to production
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://notes-app-backend3.onrender.com';
 // const API_BASE_URL = 'http://localhost:5000/api';   // For local development
 console.log('🔗 Frontend connecting to backend:', API_BASE_URL);
 
