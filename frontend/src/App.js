@@ -4,6 +4,7 @@ import { notesAPI } from './services/api';
 
 function App() {
   const [notes, setNotes] = useState([]);
+  const [developerInfo, setDeveloperInfo] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -11,6 +12,7 @@ function App() {
   // Fetch notes on load
   useEffect(() => {
     fetchNotes();
+    fetchDeveloperInfo();
   }, []);
 
   const fetchNotes = async () => {
@@ -22,6 +24,14 @@ function App() {
       console.error('Error fetching notes:', error);
     } finally {
       setLoading(false);
+    }
+  };
+  const fetchDeveloperInfo = async () => {
+    try {
+      const response = await notesAPI.getDevelopersInfo();
+      setDeveloperInfo(response.data);
+    } catch (error) {
+      console.error('Error fetching developer info:', error);
     }
   };
 
@@ -123,6 +133,11 @@ function App() {
               </div>
             ))}
           </div>
+        </div>
+        {/* Developer Info */}
+        <div style={{ marginTop: '40px', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f1f1f1' }}>
+          <h2>👨‍💻 Developer Info</h2>
+          <p style={{ color: '#555', fontSize: '16px' }}>{developerInfo}</p>
         </div>
 
         {/* Footer */}

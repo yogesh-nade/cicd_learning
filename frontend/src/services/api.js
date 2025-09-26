@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { get } from 'mongoose';
 
 // Backend API URL - uses environment variable or fallback to production
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://notes-app-backend3.onrender.com/api';
-
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://notes-app-backend-yogeshnade.onrender.com/api';
+// const API_BASE_URL = 'http://localhost:5000/api';   // For local development
 console.log('🔗 Frontend connecting to backend:', API_BASE_URL);
 
 const api = axios.create({
@@ -15,6 +16,8 @@ const api = axios.create({
 export const notesAPI = {
   // Get all notes
   getAllNotes: () => api.get('/notes'),
+
+  getDevelopersInfo: () => api.get('/notes/developer'),
   
   // Get a single note by ID
   getNoteById: (id) => api.get(`/notes/${id}`),
