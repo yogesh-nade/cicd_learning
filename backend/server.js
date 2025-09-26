@@ -14,10 +14,7 @@ app.use(express.json());
 console.log('Attempting to connect to MongoDB...');
 console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/notesapp', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).catch(err => {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/notesapp').catch(err => {
   console.error('MongoDB connection error:', err);
   process.exit(1);
 });
@@ -64,8 +61,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler - Fixed for Express compatibility
+app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 

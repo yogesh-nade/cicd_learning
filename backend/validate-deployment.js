@@ -47,10 +47,7 @@ if (process.env.MONGODB_URI) {
   console.log('Testing MongoDB connection...');
   const mongoose = require('mongoose');
   
-  mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  }).then(() => {
+  mongoose.connect(process.env.MONGODB_URI).then(() => {
     console.log('✅ MongoDB connection test successful');
     mongoose.connection.close();
   }).catch(err => {
