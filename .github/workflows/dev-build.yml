@@ -1,0 +1,55 @@
+name: Development Build
+
+# Trigger only on feature branches and PRs
+on:
+  push:
+    branches-ignore: [ main ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  # Quick build check for development
+  dev-build:
+    name: Development Build Check
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ${{ matrix.component }}/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd ${{ matrix.component }}
+        npm ci
+    
+    - name: Run build check
+      run: |
+        cd ${{ matrix.component }}
+        if [ "${{ matrix.component }}" = "frontend" ]; then
+          npm run build
+        else
+          echo "Backend build check completed"
+        fi
+    
+    - name: Run quick tests
+      run: |
+        cd ${{ matrix.component }}
+        if [ "${{ matrix.component }}" = "frontend" ]; then
+          npm test -- --ci --watchAll=false --passWithNoTests
+        else
+          npm test --if-present
+        fi

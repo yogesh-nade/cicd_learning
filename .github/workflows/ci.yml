@@ -1,0 +1,167 @@
+name: CI/CD Pipeline
+
+# Trigger the workflow on push and pull requests
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+# Define environment variables
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  # Backend Build and Test Job
+  backend-build:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Checkout the repository code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    # Setup Node.js environment
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+    
+    # Install backend dependencies
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        npm ci
+    
+    # Run backend linting (if you have eslint configured)
+    - name: Run backend linting
+      run: |
+        cd backend
+        npm run lint --if-present
+    
+    # Run backend tests (if you have tests)
+    - name: Run backend tests
+      run: |
+        cd backend
+        npm test --if-present
+    
+    # Build backend (if you have a build script)
+    - name: Build backend
+      run: |
+        cd backend
+        npm run build --if-present
+    
+    # Upload backend artifacts
+    - name: Upload backend build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-build
+        path: backend/
+        retention-days: 1
+
+  # Frontend Build and Test Job
+  frontend-build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Checkout the repository code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    # Setup Node.js environment
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    # Install frontend dependencies
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    # Run frontend linting (if you have eslint configured)
+    - name: Run frontend linting
+      run: |
+        cd frontend
+        npm run lint --if-present
+    
+    # Run frontend tests
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm test -- --coverage --ci --watchAll=false
+      env:
+        CI: true
+    
+    # Build frontend for production
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+    
+    # Upload frontend build artifacts
+    - name: Upload frontend build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: frontend/build/
+        retention-days: 1
+    
+    # Upload test coverage reports
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-coverage
+        path: frontend/coverage/
+        retention-days: 7
+
+  # Security and Quality Checks
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    # Run npm audit for backend
+    - name: Run backend security audit
+      run: |
+        cd backend
+        npm audit --audit-level moderate
+    
+    # Run npm audit for frontend
+    - name: Run frontend security audit
+      run: |
+        cd frontend
+        npm audit --audit-level moderate
+
+  # Build Summary Job
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build, security-scan]
+    if: always()
+    
+    steps:
+    - name: Build Summary
+      run: |
+        echo "## 🚀 Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Backend | ${{ needs.backend-build.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Frontend | ${{ needs.frontend-build.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Security | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Artifacts Generated:" >> $GITHUB_STEP_SUMMARY
+        echo "- Backend build files" >> $GITHUB_STEP_SUMMARY
+        echo "- Frontend production build" >> $GITHUB_STEP_SUMMARY
+        echo "- Test coverage reports" >> $GITHUB_STEP_SUMMARY
