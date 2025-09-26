@@ -1,8 +1,9 @@
-name: Simple CI/CD Pipeline
+name: Backend CI/CD to Render
 
 on:
   push:
     branches: [ main ]
+    paths: [ 'backend/**' ]
 
 jobs:
   deploy:
