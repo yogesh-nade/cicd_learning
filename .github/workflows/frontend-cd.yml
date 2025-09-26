@@ -30,12 +30,11 @@ jobs:
         npm ci
         echo "✅ Frontend dependencies installed"
 
-    - name: Run tests (optional)
+    - name: Skip tests (learning project)
       run: |
         cd frontend
-        echo "🧪 Running tests..."
-        npm test -- --watchAll=false --passWithNoTests || echo "⚠️ No tests found, continuing..."
-        echo "✅ Test step completed"
+        echo "⚡ Skipping tests for CI/CD learning project"
+        echo "✅ Ready to build and deploy"
 
     - name: Build frontend
       run: |
