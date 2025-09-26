@@ -3,9 +3,7 @@ name: Backend CI/CD to Render
 on:
   push:
     branches: [ main ]
-    paths: 
-      - 'backend/**'
-      - '.github/workflows/cd.yml'
+    paths: [ 'backend/**' ]
 
 jobs:
   deploy:
