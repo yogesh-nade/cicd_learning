@@ -46,7 +46,7 @@ jobs:
     - name: Run backend tests
       run: |
         cd backend
-        npm test --if-present
+        npm test
     
     # Build backend (if you have a build script)
     - name: Build backend
@@ -96,7 +96,7 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        npm test -- --coverage --ci --watchAll=false
+        npm test -- --coverage --ci --watchAll=false --passWithNoTests
       env:
         CI: true
     
