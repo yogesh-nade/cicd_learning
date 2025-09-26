@@ -33,12 +33,13 @@ const notesRoutes = require('./routes/notes');
 // Routes
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Notes API is running!',
-    version: '1.0.2',
+    message: 'Notes API is running with full CI/CD pipeline!',
+    version: '1.0.3',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
-    deployment: 'clean-workflow-test',
-    status: 'production-ready'
+    deployment: 'full-cicd-complete',
+    status: 'production-ready',
+    pipeline: 'github-actions-to-render-working'
   });
 });
 
