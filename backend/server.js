@@ -11,15 +11,23 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
+console.log('Attempting to connect to MongoDB...');
+console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
+
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/notesapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
 });
 
 const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
+db.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
 db.once('open', () => {
-  console.log('Connected to MongoDB');
+  console.log('✅ Connected to MongoDB successfully');
 });
 
 // Import routes
