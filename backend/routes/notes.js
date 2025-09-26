@@ -12,6 +12,11 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET all notes
+router.get('/yogesh', async (req, res) => {
+  res.json(' My name is yogesh Nade');
+});
+
 // GET a single note by ID
 router.get('/:id', async (req, res) => {
   try {
