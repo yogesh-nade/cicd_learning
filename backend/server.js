@@ -29,17 +29,19 @@ db.once('open', () => {
 
 // Import routes
 const notesRoutes = require('./routes/notes');
+const statusRoutes = require('./routes/status');
 
 // Routes
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Notes API is running with full CI/CD pipeline!',
-    version: '1.0.3',
+    version: '1.0.4',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
-    deployment: 'full-cicd-complete',
+    deployment: 'cicd-pipeline-test',
     status: 'production-ready',
-    pipeline: 'github-actions-to-render-working'
+    pipeline: 'github-actions-to-render-working',
+    new_features: ['status-endpoints', 'system-metrics', 'monitoring']
   });
 });
 
@@ -54,6 +56,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/notes', notesRoutes);
+app.use('/api/status', statusRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
