@@ -54,9 +54,9 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>� Notes App - DEPLOYMENT TEST v2.0</h1>
+        <h1>🚀 Notes App - FIXED WORKFLOW v3.0</h1>
         <p>Testing automatic frontend deployment to Netlify!</p>
-        <p style={{color: 'green'}}>⚡ If you see this, auto-deployment is working!</p>
+        <p style={{color: 'green'}}>⚡ Workflow fixed - no tests required!</p>
       </header>
 
       <main style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
