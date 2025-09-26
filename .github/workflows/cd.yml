@@ -29,7 +29,13 @@ jobs:
     - name: Verify backend build
       run: |
         cd backend
-        npm ci
+        if [ -f package-lock.json ]; then
+          echo "📦 Installing dependencies with npm ci..."
+          npm ci
+        else
+          echo "📦 No package-lock.json found, using npm install..."
+          npm install
+        fi
         echo "✅ Backend dependencies installed successfully"
         
     # Trigger Render deployment
