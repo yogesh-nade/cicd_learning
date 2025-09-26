@@ -6,74 +6,41 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Basic middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-console.log('Attempting to connect to MongoDB...');
-console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
-
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/notesapp').catch(err => {
-  console.error('MongoDB connection error:', err);
-  process.exit(1);
-});
-
-const db = mongoose.connection;
-db.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
-});
-db.once('open', () => {
-  console.log('✅ Connected to MongoDB successfully');
-});
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/notesapp')
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB connection failed:', err));
 
 // Import routes
 const notesRoutes = require('./routes/notes');
-const statusRoutes = require('./routes/status');
 
-// Routes
+// Main API endpoint
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Notes API is running with full CI/CD pipeline!',
-    version: '1.0.4',
-    environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString(),
-    deployment: 'cicd-pipeline-test',
-    status: 'production-ready',
-    pipeline: 'github-actions-to-render-working',
-    new_features: ['status-endpoints', 'system-metrics', 'monitoring']
+    message: 'Notes API - CI/CD Learning Project',
+    version: '1.0.5',
+    timestamp: new Date().toISOString()
   });
 });
 
-// Health check endpoint
+// Simple health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
+  res.json({ 
+    status: 'healthy',
+    uptime: Math.floor(process.uptime()),
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
+// Routes
 app.use('/api/notes', notesRoutes);
-app.use('/api/status', statusRoutes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    message: 'Something went wrong!', 
-    error: process.env.NODE_ENV === 'production' ? {} : err.message 
-  });
-});
-
-// 404 handler - Fixed for Express compatibility
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
-
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`MongoDB URI: ${process.env.MONGODB_URI ? 'Set' : 'Not set'}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

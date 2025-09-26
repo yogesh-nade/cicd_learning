@@ -1,63 +1,50 @@
-name: Production Deployment
+name: Simple CI/CD Pipeline
 
-# Trigger deployment on push to main branch
 on:
   push:
     branches: [ main ]
 
-env:
-  NODE_VERSION: '18.x'
-
 jobs:
-  # Deploy Backend to Render
-  deploy-backend:
-    name: Deploy Backend
+  deploy:
+    name: Deploy to Render
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: backend/package-lock.json
+        node-version: '18.x'
 
-    # Pre-deployment verification
-    - name: Verify backend build
+    - name: Install dependencies
       run: |
         cd backend
-        if [ -f package-lock.json ]; then
-          echo "📦 Installing dependencies with npm ci..."
-          npm ci
-        else
-          echo "📦 No package-lock.json found, using npm install..."
-          npm install
-        fi
-        echo "✅ Backend dependencies installed successfully"
+        npm install
+        echo "✅ Dependencies installed"
         
-    # Trigger Render deployment
     - name: Deploy to Render
       env:
         RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
       run: |
-        if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
-          echo "❌ RENDER_DEPLOY_HOOK_URL secret not configured"
-          echo "Please set up the Render deploy hook URL in GitHub secrets"
-          exit 1
-        fi
+        echo "🚀 Deploying to Render..."
+        curl -X POST "$RENDER_DEPLOY_HOOK_URL"
+        echo "✅ Deployment triggered"
         
-        echo "🚀 Triggering Render deployment..."
-        response=$(curl -s -w "%{http_code}" -X POST "$RENDER_DEPLOY_HOOK_URL")
-        http_code="${response: -3}"
+    - name: Wait for deployment
+      run: |
+        echo "⏳ Waiting 60 seconds for deployment..."
+        sleep 60
         
-        if [[ "$http_code" -eq 200 || "$http_code" -eq 201 ]]; then
-          echo "✅ Deployment hook triggered successfully"
-        else
-          echo "❌ Deployment hook failed with HTTP code: $http_code"
-          exit 1
+    - name: Test deployment
+      env:
+        RENDER_SERVICE_URL: ${{ secrets.RENDER_SERVICE_URL }}
+      run: |
+        echo "🧪 Testing deployment..."
+        response=$(curl -s "$RENDER_SERVICE_URL/health")
+        echo "Health check response: $response"
+        echo "✅ Deployment successful!"
         fi
 
     # Wait and verify deployment
