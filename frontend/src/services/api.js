@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { get } from 'mongoose';
+
 
 // Backend API URL - uses environment variable or fallback to production
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://notes-app-backend-yogeshnade.onrender.com/api';
